@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.3
+
+### Fixed
+
+- A second `playFlip` while the first one runs cancels the running move before it measures, so the new move starts from where the child shows and not from the old transform.
+- `useSpring` cuts each frame into steps of at most 1/120 s, so a slow frame (64 ms) no longer makes a stiff spring diverge.
+- `animate` with reduced motion sets `delay` and `endDelay` to zero too, so the final state is not held back.
+- `playFlip` without Web Animations leaves the child's own inline `transform` alone instead of leaving `translateY(0px)` behind.
+
 ## 1.0.2
 
 ### Fixed

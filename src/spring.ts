@@ -69,6 +69,12 @@ export interface SpringOptions {
 const MAX_STEP = 0.064;
 
 /**
+ * The longest single integration step, in seconds. Semi-implicit Euler grows without bound once a
+ * step is long against the spring's period, so a frame is cut into steps of at most this size.
+ */
+const SUBSTEP = 1 / 120;
+
+/**
  * Follows `source()` with a damped spring. A new target in the middle of a move keeps the current
  * velocity, so the value never jumps; an underdamped spring overshoots before it settles. The spring
  * stops asking for frames once it is settled, so an idle value costs nothing. With reduced motion
@@ -123,9 +129,13 @@ export function useSpring(source: Accessor<number>, options: SpringOptions = {})
     last = now;
     const previousPosition = position;
     const previousVelocity = velocity;
-    const force = -stiffness * (position - target) - damping * velocity;
-    velocity += (force / mass) * seconds;
-    position += velocity * seconds;
+    const steps = Math.ceil(seconds / SUBSTEP);
+    const dt = seconds / steps;
+    for (let step = 0; step < steps; step += 1) {
+      const force = -stiffness * (position - target) - damping * velocity;
+      velocity += (force / mass) * dt;
+      position += velocity * dt;
+    }
     // A non-finite state (a zero mass, a NaN option) never settles by the test below and would ask
     // for frames forever, so it snaps to the target.
     // The same goes for physics that cannot settle: with no restoring force (stiffness 0) the spring

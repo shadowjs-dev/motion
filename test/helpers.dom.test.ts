@@ -60,7 +60,7 @@ describe("animate", () => {
     const element = document.createElement("div");
     const fake = fakeAnimate(element);
     animate(element, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, reducedMotion: true });
-    expect(fake.calls[0]?.[1]).toEqual({ duration: 0, reducedMotion: true });
+    expect(fake.calls[0]?.[1]).toEqual({ duration: 0, delay: 0, endDelay: 0, reducedMotion: true });
     animate(element, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, reducedMotion: false });
     expect(fake.calls[1]?.[1]).toEqual({ duration: 300, reducedMotion: false });
   });

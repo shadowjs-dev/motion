@@ -65,6 +65,9 @@ export interface FlipOptions {
   readonly reducedMotion?: boolean;
 }
 
+/** The move each child is playing, so a second {@link playFlip} can end it before it measures. */
+const running = new WeakMap<Element, AnimationHandle>();
+
 /**
  * Records the place of every child of `container` that has the key attribute: the first step of
  * FLIP. Call it before the list changes, then {@link playFlip} after the change is in the DOM.
@@ -178,16 +181,21 @@ export function playFlip(
       const key = child.getAttribute(options.keyAttribute ?? "data-key");
       const previous = key === null ? undefined : before.get(key);
       if (previous === undefined) continue;
+      // A move still running would put its transform into the measurement: the new move would start
+      // from the place the old one has left, not from where the child shows.
+      running.get(child)?.cancel();
+      // Without Web Animations the child is already at its new place; writing a transform would stay.
+      if (typeof child.animate !== "function") continue;
       const now = child.getBoundingClientRect();
       const dx = previous.left - now.left;
       const dy = previous.top - now.top;
       if (dx === 0 && dy === 0) continue;
-      moves.push(
-        animate(child, moveKeyframes(dx, dy), {
-          duration: options.duration ?? 250,
-          easing: options.easing ?? "ease-out",
-        }),
-      );
+      const move = animate(child, moveKeyframes(dx, dy), {
+        duration: options.duration ?? 250,
+        easing: options.easing ?? "ease-out",
+      });
+      running.set(child, move);
+      moves.push(move);
     }
   }
   return {
