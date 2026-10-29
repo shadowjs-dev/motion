@@ -37,7 +37,8 @@ export interface PresenceOptions {
   readonly exit?: Keyframe[] | PropertyIndexedKeyframes | undefined;
   /**
    * The keyframes played on the element when `present` is true and `ref` has an element: on the
-   * first run of the hook's effect, and each time `present` turns true again. Not waited for.
+   * first run of the hook's effect, each time `present` turns true again, and for a new element that
+   * `ref` receives while `present` is true (content that was unmounted and shown again). Not waited for.
    */
   readonly enter?: Keyframe[] | PropertyIndexedKeyframes | undefined;
   /**
@@ -130,28 +131,35 @@ export function usePresence(options: PresenceOptions): Presence {
   // The animation that runs now, enter or exit. A new state cancels it, so an enter that is still
   // running when the content closes does not play under the exit, and disposal cancels it too.
   let running: AnimationHandle | undefined;
-  const duration = options.duration ?? 200;
-  const reducedMotion = options.reducedMotion;
+  const timing = { duration: options.duration ?? 200, reducedMotion: options.reducedMotion };
   const cancelRunning = (): void => {
     running?.cancel();
     running = undefined;
   };
+  // The element whose enter was started by this presence, so a `ref` and the effect never start it twice.
+  let entered: Element | undefined;
+  // A new state cancels what runs, then plays the enter on the current element when there is one.
+  const playEnter = (): void => {
+    cancelRunning();
+    if (element === undefined || options.enter === undefined) return;
+    entered = element;
+    running = animate(element, options.enter, timing);
+  };
   useEffect(() => {
     if (options.present()) {
-      cancelRunning();
       setMounted(true);
-      if (element !== undefined && options.enter !== undefined) {
-        running = animate(element, options.enter, { duration, reducedMotion });
-      }
+      // The element already entered (its `ref` ran while `present` was true): its enter is running.
+      if (element === undefined || entered !== element) playEnter();
       return;
     }
+    entered = undefined;
     if (!untrack(mounted)) return;
     cancelRunning();
     if (element === undefined || options.exit === undefined) {
       setMounted(false);
       return;
     }
-    const handle = animate(element, options.exit, { duration, reducedMotion });
+    const handle = animate(element, options.exit, timing);
     running = handle;
     void handle.finished.then(() => {
       if (running !== handle) return;
@@ -164,6 +172,10 @@ export function usePresence(options: PresenceOptions): Presence {
     mounted,
     ref(next) {
       element = next ?? undefined;
+      if (element === undefined) entered = undefined;
+      // Content that was unmounted and shown again arrives with a new element after the effect ran,
+      // so the element itself starts its enter.
+      else if (untrack(options.present) && entered !== element) playEnter();
     },
   };
 }

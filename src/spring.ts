@@ -27,17 +27,20 @@ import { useReducedMotion } from "./reduced-motion";
 export interface SpringOptions {
   /**
    * Spring stiffness: the pull toward the target per unit of distance. Higher reaches the target
-   * faster.
+   * faster. Must be positive: a spring with no restoring force, or one that pushes away from the
+   * target, cannot settle, so it snaps to the target on its first frame.
    * @default 170
    */
   readonly stiffness?: number;
   /**
-   * Damping: the drag per unit of velocity. Lower overshoots more.
+   * Damping: the drag per unit of velocity. Lower overshoots more; `0` never settles. Must not be
+   * negative (a negative damping snaps to the target on the first frame).
    * @default 26
    */
   readonly damping?: number;
   /**
-   * Mass of the moving value. Higher is slower.
+   * Mass of the moving value. Higher is slower. Must be positive (otherwise the spring snaps to the
+   * target on its first frame).
    * @default 1
    */
   readonly mass?: number;
@@ -125,7 +128,15 @@ export function useSpring(source: Accessor<number>, options: SpringOptions = {})
     position += velocity * seconds;
     // A non-finite state (a zero mass, a NaN option) never settles by the test below and would ask
     // for frames forever, so it snaps to the target.
-    const diverged = !Number.isFinite(position) || !Number.isFinite(velocity);
+    // The same goes for physics that cannot settle: with no restoring force (stiffness 0) the spring
+    // never moves yet always misses the target, and a restoring force that points away (negative
+    // stiffness, mass or damping) grows without bound.
+    const diverged =
+      !Number.isFinite(position) ||
+      !Number.isFinite(velocity) ||
+      !(stiffness > 0) ||
+      !(mass > 0) ||
+      !(damping >= 0);
     // Below floating-point resolution, damping can no longer change either state value. A zero
     // timestep and undamped oscillation are not convergence, so neither takes this exit.
     const stalled =

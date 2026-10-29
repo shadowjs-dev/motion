@@ -102,7 +102,9 @@ export function useTween(source: Accessor<number>, options: TweenOptions = {}): 
     const startedAt = clock.now();
     const step = (now: number): void => {
       const progress = Math.min(1, Math.max(0, (now - startedAt) / duration));
-      setValue(from + (to - from) * ease(progress));
+      // The last frame writes the target itself: `from + (to - from) * 1` can differ from it by a
+      // rounding error, and an easing need not return exactly 1 at the end.
+      setValue(progress < 1 ? from + (to - from) * ease(progress) : to);
       handle = progress < 1 ? clock.request(step) : undefined;
     };
     handle = clock.request(step);

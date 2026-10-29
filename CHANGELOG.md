@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2
+
+### Fixed
+
+- `useTween` ends on the target value exactly, whatever the easing returns at the end and whatever floating-point rounding does.
+- `useSpring` with a stiffness or mass that is not positive, or a negative damping, snaps to the target on its first frame; before, no stiffness requested frames for ever and a negative one flew away from the target.
+- `usePresence` plays `enter` on an element that `ref` receives after the content was unmounted and shown again.
+
 ## 1.0.1
 
 ### Changed
