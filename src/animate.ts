@@ -107,10 +107,11 @@ export function animate(
   // A duration the browser cannot play (NaN, negative, infinite) ends at once, as reduced motion does.
   // A missing duration is NaN here too, and plays as zero, which is the browser's default.
   const length = Number(options.duration);
-  const timing: AnimateOptions =
-    reduce || !(length >= 0 && length < Number.POSITIVE_INFINITY)
-      ? { ...options, duration: 0, ...(reduce && { delay: 0, endDelay: 0 }) }
-      : options;
+  const timing: AnimateOptions = reduce
+    ? { ...options, duration: 0, delay: 0, endDelay: 0 }
+    : length >= 0 && length < Number.POSITIVE_INFINITY
+      ? options
+      : { ...options, duration: 0 };
   if (typeof element.animate === "function") {
     const animation = element.animate(keyframes, timing);
     return {

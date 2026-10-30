@@ -5,7 +5,7 @@ description: "Work with @shadow-js/motion. Tween and spring values, exit animati
 
 # @shadow-js/motion
 
-Version 1.0.3. Tween and spring values, exit animations and animated list reordering, driven by signals.
+Version 1.0.4. Tween and spring values, exit animations and animated list reordering, driven by signals.
 
 ## Where to read more
 
@@ -23,8 +23,8 @@ npm install @shadow-js/motion @shadow-js/core @shadow-js/web
 
 | Package | Range | Required |
 | --- | --- | --- |
-| `@shadow-js/core` | `^1.0.3` | yes |
-| `@shadow-js/web` | `^1.0.3` | yes |
+| `@shadow-js/core` | `^1.0.4` | yes |
+| `@shadow-js/web` | `^1.0.4` | yes |
 
 ## Import paths
 
