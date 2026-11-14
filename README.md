@@ -68,7 +68,7 @@ server, so the hooks only return their starting values there.
 ## Dependencies
 
 - Runtime: none.
-- Peers: `@shadow-js/core` and `@shadow-js/web` `^1.0.5`: the reactive clock and the renderer the animation hooks drive.
+- Peers: `@shadow-js/core` and `@shadow-js/web` `^1.0.6`: the reactive clock and the renderer the animation hooks drive.
 
 ## Types
 
