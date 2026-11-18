@@ -8,10 +8,12 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-blue.svg)](https://www.typescriptlang.org/)
 
-Signal-driven motion for ShadowJS 1.0.0: tween and spring values (`useTween`, `useSpring`), an element
-animation over the Web Animations API with a fallback (`animate`), presence for content that leaves
-(`Presence` and `usePresence`), FLIP for reordered keyed lists (`captureLayout`, `playFlip`), and the
-reduced-motion preference everywhere. Each export is in its own module with `sideEffects: false`.
+Signal-driven motion for ShadowJS: tween and spring values (`useTween`, `useSpring`), springs moved by
+command with delays and staggering (`useSpringValue`, `stagger`), dragging with limits and momentum
+(`useDrag`), scroll-linked values (`useScroll`, `useTransform`, `interpolate`), shared-element
+transitions (`createShared`), an element animation over the Web Animations API with a fallback
+(`animate`), presence for content that leaves (`Presence` and `usePresence`), FLIP for reordered keyed
+lists (`captureLayout`, `playFlip`), and the reduced-motion preference everywhere. Each export is in its own module with `sideEffects: false`.
 
 ## Install
 
@@ -54,6 +56,17 @@ children in a wrapper until the exit keyframes finish.
   again during the exit cancels it.
 - `captureLayout(container)` and `playFlip(container, before)`: FLIP for keyed children, returning a handle with `cancel()` and `finished`; moving only
   `transform`. It does nothing with reduced motion.
+- `useSpringValue(initial, options)`: a value moved by command. `to(target, { delay, velocity })`
+  returns a promise (`true` on arrival, `false` when replaced, stopped or disposed); `set`, `stop`,
+  `velocity()`, `moving()`. `stagger(each, { start, from, count, max })` gives a group's delays.
+- `useDrag(options)`: pointer dragging with `bounds`, a rubber band (`elastic`), a throw that slows
+  (`momentum`, `power`, `timeConstant`), a spring back, `snapToOrigin`, a click threshold and
+  `allow(event)`. Returns `ref`, `x`, `y`, `velocityX`, `velocityY`, `dragging`, `style`, `set`,
+  `moveTo`. `rubberBand` is the pure helper.
+- `useScroll({ target, container, offset })`: scroll position and progress as accessors;
+  `scrollProgress` and `resolveEdge` are the pure parts. `useTransform(source, input, output)` and
+  `interpolate(input, output)` map values along stops.
+- `createShared(options)`: shared-element transitions; `ref(id)`, `snapshot()`, `dispose()`.
 - `useReducedMotion()`, `prefersReducedMotionNow()`, `easings`, `frameClock`.
 
 Reduced motion comes from `matchMedia("(prefers-reduced-motion: reduce)")`. Where there is no
@@ -62,17 +75,17 @@ server, so the hooks only return their starting values there.
 
 ## Links
 
-- Recipes for a list that enters and exits, press feedback with a spring, a drawer, and canceling on abort.
+- Guide sections for springs by command, dragging, scroll-linked values and shared elements; recipes for a list that enters and exits, press feedback with a spring, a drawer, and canceling on abort.
 - Reference: `/reference/motion/` on the documentation site.
 
 ## Dependencies
 
 - Runtime: none.
-- Peers: `@shadow-js/core` and `@shadow-js/web` `^1.0.6`: the reactive clock and the renderer the animation hooks drive.
+- Peers: `@shadow-js/core` and `@shadow-js/web` `^1.1.0`: the reactive clock and the renderer the animation hooks drive.
 
 ## Types
 
-- Names from the root: `AnimateOptions`, `AnimationHandle`, `FlipOptions`, `MotionClock`, `Presence`, `usePresence`, `useSpring`, `useTween`.
+- Names from the root: `AnimateOptions`, `AnimationHandle`, `DragHandle`, `DragOptions`, `FlipOptions`, `MotionClock`, `Presence`, `ScrollOptions`, `Shared`, `SpringValue`, `usePresence`, `useSpring`, `useTween`.
 - Type tests in `test-types/` are compile-time checks; `npm run typecheck:types` runs them.
 
 ## Support

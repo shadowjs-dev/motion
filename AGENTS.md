@@ -100,6 +100,18 @@ Package-specific rules:
   `MOT-11`). Reduced motion makes the duration zero (`MOT-12`).
 - Presence keeps its element until the exit finishes and cancels the exit when opened again (`MOT-13`..`MOT-15`).
 - FLIP animates only `transform` and does nothing when reduced motion is on (`MOT-21`, `MOT-22`).
+- `useDrag` uses pointer events with capture; only the primary mouse button starts a drag, a move
+  under the threshold stays a click (`MOT-79`), and the click after a drag is swallowed once
+  (`MOT-93`). Release speed comes from the last 100 ms of samples, so a pointer held still throws
+  nothing (`MOT-88`). Its glide runs on the injected clock and is canceled with the owner (`MOT-97`).
+- Refs return their cleanup (`useDrag`, `createShared`): ShadowJS and React 19 run it when the
+  element's owner is disposed, which is how a shared element is known to leave (`MOT-101`, `MOT-108`).
+- `createShared` measures on input and on arrival, never at removal time only, so it does not depend
+  on layout existing while an element is torn down (`MOT-103`).
+- `useScroll` writes in `batch()`, listens passively, and returns `0` on the server; malformed offsets
+  throw at the call (`MOT-73`..`MOT-78`).
+- `useSpringValue` asks for frames only while moving; every promise resolves (never rejects), `false`
+  when the move is replaced, stopped or disposed (`MOT-110`..`MOT-120`).
 - Size: every export is tree-shakable; an app that imports one feature pays for that feature only. A new export keeps that true.
 - Invariant ids `[MOT-nn]`.
 

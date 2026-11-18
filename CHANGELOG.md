@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+### Added
+
+- `useDrag` and `rubberBand`: pointer dragging with limits, a rubber band past them, a throw that slows down, a spring back, `snapToOrigin`, a click threshold, and a swallowed click after a drag.
+- `useScroll`, `scrollProgress` and `resolveEdge`: scroll position and progress of the page, a container or a target, with `offset` points and right-to-left support.
+- `useTransform` and `interpolate`: map a value along paired stops, clamped by default, with an optional easing per segment.
+- `createShared`: shared-element transitions between a leaving and an arriving element of the same id.
+- `useSpringValue` and `stagger`: a spring moved by command with a delay and a starting speed, returning a promise, and the delays of a group.
+
 ## 1.0.6
 
 ### Changed
