@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.1
+
+### Added
+
+- `ResolvedEdge`: the type `resolveEdge` returns, now exported.
+
+### Changed
+
+- `resolveEdge` and `AxisLayout` are documented in full, with an example.
+
 ## 1.1.0
 
 ### Added

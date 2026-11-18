@@ -58,13 +58,38 @@ export interface ScrollValues {
   readonly yProgress: Accessor<number>;
 }
 
-interface Resolved {
+/**
+ * An edge as a fraction of a size plus a number of pixels: what {@link resolveEdge} returns.
+ * @since 1.1.1
+ */
+export interface ResolvedEdge {
+  /** The part of the size, 0 at the start edge and 1 at the end edge. */
   readonly fraction: number;
+  /** Pixels added to it. */
   readonly pixels: number;
 }
 
-/** Turns an edge into a fraction of the size plus a number of pixels. */
-export function resolveEdge(edge: string | number): Resolved {
+type Resolved = ResolvedEdge;
+
+/**
+ * Turns an edge of a scroll point into a fraction of the size plus a number of pixels. Pure: {@link useScroll} reads
+ * its `offset` with it.
+ *
+ * @param edge `"start"`, `"center"`, `"end"`, a fraction (`0.25` or `"0.25"`), pixels (`"120px"`) or a percentage
+ *   (`"25%"`).
+ * @returns The fraction and the pixels.
+ * @throws RangeError for anything else.
+ * @example
+ * ```ts
+ * import { resolveEdge } from "@shadow-js/motion";
+ *
+ * console.log(resolveEdge("center")); // { fraction: 0.5, pixels: 0 }
+ * console.log(resolveEdge("120px")); // { fraction: 0, pixels: 120 }
+ * console.log(resolveEdge("25%")); // { fraction: 0.25, pixels: 0 }
+ * ```
+ * @since 1.1.0
+ */
+export function resolveEdge(edge: string | number): ResolvedEdge {
   if (typeof edge === "number") return { fraction: edge, pixels: 0 };
   if (edge === "start") return { fraction: 0, pixels: 0 };
   if (edge === "center") return { fraction: 0.5, pixels: 0 };
@@ -85,10 +110,14 @@ function resolvePoint(point: string): readonly [Resolved, Resolved] {
   return [resolveEdge(parts[0] as string), resolveEdge(parts[1] as string)];
 }
 
-/** The layout numbers of one axis, in pixels. */
+/**
+ * The layout numbers of one axis, in pixels: what {@link scrollProgress} reads.
+ * @since 1.1.0
+ */
 export interface AxisLayout {
   /** Distance from the start of the scrollable content to the target's start edge. */
   readonly targetStart: number;
+  /** The target's size along the axis. */
   readonly targetSize: number;
   /** The visible size of the container. */
   readonly containerSize: number;

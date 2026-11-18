@@ -21,6 +21,7 @@ export { Presence, type PresenceOptions, type PresenceProps, usePresence } from 
 export { prefersReducedMotionNow, useReducedMotion } from "./reduced-motion";
 export {
   type AxisLayout,
+  type ResolvedEdge,
   resolveEdge,
   type ScrollEdge,
   type ScrollOptions,
