@@ -149,13 +149,29 @@ export function scrollProgress(
   layout: AxisLayout,
   offset?: readonly [ScrollPoint, ScrollPoint],
 ): number {
+  return progressBetween(
+    scroll,
+    layout,
+    offset === undefined ? undefined : [resolvePoint(offset[0]), resolvePoint(offset[1])],
+  );
+}
+
+/** The two points of an offset, each parsed once. */
+type ResolvedOffset = readonly [readonly [Resolved, Resolved], readonly [Resolved, Resolved]];
+
+/** {@link scrollProgress} for points that are already parsed: a scroll event must not parse text. */
+function progressBetween(
+  scroll: number,
+  layout: AxisLayout,
+  offset: ResolvedOffset | undefined,
+): number {
   let from: number;
   let to: number;
   if (offset === undefined) {
     from = 0;
     to = layout.scrollSize - layout.containerSize;
   } else {
-    const [a, b] = [resolvePoint(offset[0]), resolvePoint(offset[1])];
+    const [a, b] = offset;
     const at = (point: readonly [Resolved, Resolved]): number =>
       layout.targetStart +
       point[0].fraction * layout.targetSize +
@@ -206,9 +222,9 @@ export function useScroll(options: ScrollOptions = {}): ScrollValues {
   const [xProgress, setXProgress] = useSignal(0);
   const [yProgress, setYProgress] = useSignal(0);
   const offset = options.offset ?? DEFAULT_OFFSET;
-  // Fails at the call, not at the first scroll, when a point is malformed.
-  resolvePoint(offset[0]);
-  resolvePoint(offset[1]);
+  // Parsed once, here: a malformed point fails at the call, not at the first scroll, and no scroll
+  // event parses text.
+  const points: ResolvedOffset = [resolvePoint(offset[0]), resolvePoint(offset[1])];
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -263,12 +279,12 @@ export function useScroll(options: ScrollOptions = {}): ScrollValues {
       if (!layoutX || !layoutY) measure();
       const scrollX = container ? Math.abs(container.scrollLeft) : Math.abs(window.scrollX);
       const scrollY = container ? container.scrollTop : window.scrollY;
-      const o = target ? offset : undefined;
+      const o = target ? points : undefined;
       batch(() => {
         setX(scrollX);
         setY(scrollY);
-        setXProgress(scrollProgress(scrollX, layoutX as AxisLayout, o));
-        setYProgress(scrollProgress(scrollY, layoutY as AxisLayout, o));
+        setXProgress(progressBetween(scrollX, layoutX as AxisLayout, o));
+        setYProgress(progressBetween(scrollY, layoutY as AxisLayout, o));
       });
     };
 

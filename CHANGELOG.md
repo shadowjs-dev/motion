@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+### Fixed
+
+- `useDrag`: a spring back that cannot settle (`bounceStiffness` of 0 or less, a negative `bounceDamping`, a state that is no longer finite) ends at its target instead of asking for frames forever.
+- `useDrag`: an option that is not a finite number (`NaN`, `Infinity`) takes its default instead of reaching every position and the style.
+- `useDrag`: a drag that no click follows (a touch drag) no longer swallows the next click made without a pointer press, such as a keyboard activation.
+- `useReducedMotion` starts from `false` while hydrating, as the server rendered, and takes the preference once mounted, so markup that branches on it matches.
+- `useScroll` parses its `offset` once, when it is called, not at every scroll event.
+
 ## 1.1.2
 
 ### Changed

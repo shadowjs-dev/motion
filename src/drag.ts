@@ -159,6 +159,11 @@ export function rubberBand(
   return value;
 }
 
+/** `value` when it is a finite number, else `fallback` (the option was left out, or is not a number). */
+function finite(value: number | undefined, fallback: number): number {
+  return value !== undefined && Number.isFinite(value) ? value : fallback;
+}
+
 /**
  * Makes an element draggable. The element must be positioned by the `x` and `y` you get back (usually
  * `style={drag.style()}`, or your own transform built from `drag.x()` and `drag.y()`). While dragging,
@@ -189,13 +194,18 @@ export function rubberBand(
 export function useDrag(options: DragOptions = {}): DragHandle {
   const clock = options.clock ?? frameClock;
   const axisMode = options.axis ?? "both";
-  const elastic = Math.min(1, Math.max(0, options.elastic ?? 0.35));
+  // An option that is not a finite number (NaN, Infinity) takes its default: one NaN here would reach
+  // every position after it, and the style with them.
+  const elastic = Math.min(1, Math.max(0, finite(options.elastic, 0.35)));
   const momentum = options.momentum ?? true;
-  const power = options.power ?? 0.8;
-  const timeConstant = Math.max(1, options.timeConstant ?? 700);
-  const bounceStiffness = options.bounceStiffness ?? 500;
-  const bounceDamping = options.bounceDamping ?? 28;
-  const threshold = options.threshold ?? 3;
+  const power = finite(options.power, 0.8);
+  const timeConstant = Math.max(1, finite(options.timeConstant, 700));
+  const bounceStiffness = finite(options.bounceStiffness, 500);
+  const bounceDamping = finite(options.bounceDamping, 28);
+  const threshold = finite(options.threshold, 3);
+  // A spring with no pull toward its target never arrives, and one whose damping pushes grows without
+  // end: either would ask for frames forever, so the element is put at the target instead.
+  const cannotSettle = !(bounceStiffness > 0) || !(bounceDamping >= 0);
   const originX = options.initial?.x ?? 0;
   const originY = options.initial?.y ?? 0;
 
@@ -227,6 +237,14 @@ export function useDrag(options: DragOptions = {}): DragHandle {
   let frame: unknown;
   let last = 0;
   let suppressClick = false;
+  // The timer set when a drag ends: once it fires, the click the drag could have caused is not coming.
+  // A timer, not a frame of the clock: the clock's frames are the glide's, and this is no motion.
+  let clickTimer: ReturnType<typeof setTimeout> | undefined;
+  const forgetClick = (): void => {
+    if (clickTimer !== undefined) clearTimeout(clickTimer);
+    clickTimer = undefined;
+    suppressClick = false;
+  };
 
   const stopGlide = (): void => {
     if (frame !== undefined) clock.cancel(frame);
@@ -269,8 +287,10 @@ export function useDrag(options: DragOptions = {}): DragHandle {
     for (const a of [ax, ay]) {
       if (
         a.mode === "spring" &&
-        Math.abs(a.pos - a.target) < ARRIVE_DISTANCE &&
-        Math.abs(a.vel) < ARRIVE_SPEED
+        (cannotSettle ||
+          !Number.isFinite(a.pos) ||
+          !Number.isFinite(a.vel) ||
+          (Math.abs(a.pos - a.target) < ARRIVE_DISTANCE && Math.abs(a.vel) < ARRIVE_SPEED))
       ) {
         a.pos = a.target;
         a.vel = 0;
@@ -368,7 +388,7 @@ export function useDrag(options: DragOptions = {}): DragHandle {
       if (event.button !== 0 && event.pointerType === "mouse") return;
       if (options.allow && !options.allow(event)) return;
       pointerId = event.pointerId;
-      suppressClick = false;
+      forgetClick();
       stopGlide();
       startPointerX = event.clientX;
       startPointerY = event.clientY;
@@ -409,6 +429,10 @@ export function useDrag(options: DragOptions = {}): DragHandle {
       el.releasePointerCapture?.(event.pointerId);
       if (!started) return;
       started = false;
+      // The click of a press is dispatched in the same task as its pointerup. A drag that ends with no
+      // click (a touch drag never has one) must not keep the flag: the next click may come from the
+      // keyboard, with no pointer press to clear it, and would be swallowed.
+      clickTimer ??= setTimeout(forgetClick, 0);
       const [vx, vy] = speedOf();
       setDragging(false);
       ax.vel = axisMode === "y" ? 0 : vx;
@@ -421,7 +445,7 @@ export function useDrag(options: DragOptions = {}): DragHandle {
 
     const swallowClick = (event: Event): void => {
       if (!suppressClick) return;
-      suppressClick = false;
+      forgetClick();
       event.preventDefault();
       event.stopPropagation();
     };
@@ -464,6 +488,7 @@ export function useDrag(options: DragOptions = {}): DragHandle {
   };
   onCleanup(() => {
     stopGlide();
+    forgetClick();
     detach?.();
     detach = undefined;
     element = undefined;

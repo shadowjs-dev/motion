@@ -194,6 +194,49 @@ describe("useDrag: release", () => {
     expect(s.clock.pending()).toBe(0);
   });
 
+  it("[MOT-G04] a spring back that cannot settle (no stiffness, a negative damping) ends at the limit at once", () => {
+    for (const physics of [{ bounceStiffness: 0 }, { bounceDamping: -5 }]) {
+      const settles: number[] = [];
+      const s = setup({
+        axis: "x",
+        bounds: { left: 0, right: 100 },
+        elastic: 0.5,
+        onSettle: (info) => settles.push(info.x),
+        ...physics,
+      });
+      pointer(s.el, "pointerdown", 0, 0);
+      pointer(s.el, "pointermove", 160, 0);
+      s.clock.frame(200);
+      pointer(s.el, "pointerup", 160, 0);
+      const frames = settleFrames(s.clock, 50);
+      expect(frames).toBeLessThan(50);
+      expect(s.drag.x()).toBe(100);
+      expect(settles).toEqual([100]);
+      expect(s.clock.pending()).toBe(0);
+    }
+  });
+
+  it("[MOT-G04b] options that are not numbers (NaN, Infinity) fall back to the defaults: positions stay finite and the glide ends", () => {
+    const s = setup({
+      axis: "x",
+      bounds: { left: 0, right: 100 },
+      elastic: Number.NaN,
+      power: Number.NaN,
+      timeConstant: Number.NaN,
+      bounceStiffness: Number.POSITIVE_INFINITY,
+      bounceDamping: Number.NaN,
+      threshold: Number.NaN,
+    });
+    pointer(s.el, "pointerdown", 0, 0);
+    moveTo(s, [0, 0], [160, 0], 4, 8);
+    expect(Number.isFinite(s.drag.x())).toBe(true);
+    pointer(s.el, "pointerup", 160, 0);
+    const frames = settleFrames(s.clock, 2000);
+    expect(frames).toBeLessThan(2000);
+    expect(s.drag.x()).toBe(100);
+    expect(s.drag.style()).toBe("transform: translate3d(100px, 0px, 0)");
+  });
+
   it("[MOT-87] a throw keeps moving, slows down and settles once", () => {
     const settles: number[] = [];
     const s = setup({ axis: "x", onSettle: (info) => settles.push(info.x) });
@@ -299,6 +342,25 @@ describe("useDrag: release", () => {
     expect(first.defaultPrevented).toBe(true);
     s.el.dispatchEvent(new Event("click", { bubbles: true, cancelable: true }));
     expect(clicks).toBe(1);
+  });
+
+  it("[MOT-G05] a drag that no click follows does not swallow a later click made without a pointer", async () => {
+    const s = setup({ momentum: false });
+    let clicks = 0;
+    s.el.addEventListener("click", () => {
+      clicks += 1;
+    });
+    pointer(s.el, "pointerdown", 0, 0);
+    pointer(s.el, "pointermove", 30, 0);
+    pointer(s.el, "pointerup", 30, 0);
+    // A touch drag ends with no click. The click of a press comes in the same task as its pointerup,
+    // so one task later none is coming.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const keyboard = new Event("click", { bubbles: true, cancelable: true });
+    s.el.dispatchEvent(keyboard);
+    expect(keyboard.defaultPrevented).toBe(false);
+    expect(clicks).toBe(1);
+    expect(s.clock.pending()).toBe(0);
   });
 
   it("[MOT-94] the browser's own dragstart is prevented", () => {

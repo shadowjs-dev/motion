@@ -4,6 +4,7 @@
  * system setting when its option is not given, and a missing `matchMedia` means "not reduced".
  */
 import { createRoot, flushSync, useSignal } from "@shadow-js/core";
+import { withHydration } from "@shadow-js/core/extend";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   animate,
@@ -74,6 +75,23 @@ describe("reduced motion preference", () => {
     query.set(false);
     flushSync();
     expect(reduced?.()).toBe(false);
+  });
+
+  it("[MOT-G06] while hydrating, useReducedMotion starts from what the server rendered (false) and takes the preference once mounted", () => {
+    const query = fakeQuery(true);
+    installMatchMedia(query);
+    let reduced: (() => boolean) | undefined;
+    let first: boolean | undefined;
+    createRoot(() => {
+      withHydration(() => {
+        reduced = useReducedMotion();
+        first = reduced();
+      });
+    });
+    // The server has no media queries: its markup was built with `false`, and the first client pass must agree.
+    expect(first).toBe(false);
+    flushSync();
+    expect(reduced?.()).toBe(true);
   });
 
   it("[MOT-43] disposing the owner of useReducedMotion removes its listener, and later changes do not reach it", () => {

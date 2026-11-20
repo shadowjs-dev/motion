@@ -5,6 +5,7 @@
  * @packageDocumentation
  */
 import { type Accessor, onMount, useSignal } from "@shadow-js/core";
+import { isHydrating } from "@shadow-js/core/extend";
 
 const QUERY = "(prefers-reduced-motion: reduce)";
 
@@ -53,7 +54,10 @@ export function prefersReducedMotionNow(): boolean {
  * @since 1.0.0
  */
 export function useReducedMotion(): Accessor<boolean> {
-  const [reduced, setReduced] = useSignal(prefersReducedMotionNow());
+  // The server has no media queries and renders with `false`. The pass that hydrates its markup must
+  // start from the same value, or markup that branches on it would not match; `onMount` below then
+  // takes the real preference.
+  const [reduced, setReduced] = useSignal(isHydrating() ? false : prefersReducedMotionNow());
   onMount(() => {
     if (typeof matchMedia !== "function") return undefined;
     const query = matchMedia(QUERY);
